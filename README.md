@@ -21,6 +21,7 @@ uv run mcp-tok <server-url> --token <auth-token> [OPTIONS]
 - `--tool <name>`: Test a specific tool (omit to test all tools)
 - `--sample <json>`: Provide sample input as JSON string
 - `--token, -t <token>`: Bearer token for authentication
+- `--cost, -c <float>`: Cost per million input tokens for cost estimation (e.g., 3.0 for $3.00/1M tokens)
 
 ### Examples
 
@@ -42,6 +43,13 @@ uv run mcp-tok https://mcp.morningstar.com/mcp \
   --token YOUR_TOKEN \
   --tool morningstar-id-lookup-tool \
   --sample '{"investments": [{"investment_name": "Apple Inc"}]}'
+```
+
+**Calculate estimated cost (e.g., GPT-4o at $2.50/1M input tokens):**
+```bash
+uv run mcp-tok https://mcp.morningstar.com/mcp \
+  --token YOUR_TOKEN \
+  --cost 2.50
 ```
 
 ## Output

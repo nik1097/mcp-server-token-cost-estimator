@@ -18,6 +18,12 @@ def estimate(
         "-t",
         help="Bearer token for MCP server authentication",
     ),
+    cost_per_million: Optional[float] = typer.Option(
+        None,
+        "--cost",
+        "-c",
+        help="Cost per million input tokens (e.g., 3.0 for $3.00/1M tokens)",
+    ),
 ):
     """
     Estimate token cost for one or all MCP tools by calling them directly.
@@ -76,7 +82,11 @@ def estimate(
             }
         )
 
-        typer.secho(f"[{tname}] tokens = {tok_count}", fg=typer.colors.GREEN)
+        cost_msg = f"[{tname}] tokens = {tok_count}"
+        if cost_per_million is not None:
+            cost = (tok_count / 1_000_000) * cost_per_million
+            cost_msg += f" | cost = ${cost:.6f}"
+        typer.secho(cost_msg, fg=typer.colors.GREEN)
 
     # pretty-print JSON summary
     typer.echo(json.dumps({"server": server_url, "results": results}, indent=2))
