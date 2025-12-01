@@ -33,9 +33,11 @@ def estimate(
         tools_meta = client.get_tools()
         # The response should have a "tools" key containing the list
         if isinstance(tools_meta, dict) and "tools" in tools_meta:
-            tools = [t.get("name") for t in tools_meta["tools"]]
+            tools = [
+                t.get("name") if isinstance(t, dict) else t for t in tools_meta["tools"]
+            ]
         elif isinstance(tools_meta, list):
-            tools = [t.get("name") for t in tools_meta]
+            tools = [t.get("name") if isinstance(t, dict) else t for t in tools_meta]
         else:
             typer.secho(
                 f"ERROR: Unexpected response format: {tools_meta}", fg=typer.colors.RED
@@ -48,6 +50,9 @@ def estimate(
 
     results = []
     for tname in tools:
+        if not tname or not isinstance(tname, str):
+            typer.secho(f"SKIPPING invalid tool name: {tname}", fg=typer.colors.YELLOW)
+            continue
         try:
             resp = client.call_tool(tname, payload)
         except Exception as e:
