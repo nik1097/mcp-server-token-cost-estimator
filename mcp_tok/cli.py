@@ -10,12 +10,15 @@ app = typer.Typer(help="MCP Cost Estimator CLI")
 @app.command()
 def estimate(
     server_url: str = typer.Argument(..., help="Base URL of the MCP server"),
-    tool: Optional[str] = typer.Option(None, help="Specific tool to call"),
-    sample: Optional[str] = typer.Option(None, help="JSON string with sample payload"),
+    tools_config: Optional[str] = typer.Option(
+        None,
+        "--tools-config",
+        "-t",
+        help="Path to JSON file mapping tool names to input parameters",
+    ),
     token: Optional[str] = typer.Option(
         None,
         "--token",
-        "-t",
         help="Bearer token for MCP server authentication",
     ),
     cost_per_million: Optional[float] = typer.Option(
@@ -32,9 +35,16 @@ def estimate(
     client = MCPClient(server_url, token=token)
     tokenizer = Tokenizer()
 
-    # Load all tools or a specific tool
-    if tool:
-        tools = [tool]
+    # Parse tools config if provided
+    tool_inputs = {}
+    if tools_config:
+        with open(tools_config, "r") as f:
+            tool_inputs = json.load(f)
+
+    # Load tools from config or all available tools
+    if tools_config:
+        # Use tools specified in config file
+        tools = list(tool_inputs.keys())
     else:
         tools_meta = client.get_tools()
         # The response should have a "tools" key containing the list
@@ -50,15 +60,15 @@ def estimate(
             )
             return
 
-    payload = {}
-    if sample:
-        payload = json.loads(sample)
-
     results = []
     for tname in tools:
         if not tname or not isinstance(tname, str):
             typer.secho(f"SKIPPING invalid tool name: {tname}", fg=typer.colors.YELLOW)
             continue
+
+        # Get tool-specific input parameters (empty dict if none provided)
+        payload = tool_inputs.get(tname, {})
+
         try:
             resp = client.call_tool(tname, payload)
         except Exception as e:
