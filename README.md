@@ -1,6 +1,6 @@
 # mcp-server-token-cost-estimator
 
-Have you ever wondered what a single response from a tool on an MCP server would cost you based on the model you’re using? Tool responses are basically tokens, and these tokens end up as input tokens for the LLM, which costs money. Since MCP servers pushes the LLM inference cost back to the client, it’s important for the client to know if an MCP server is not only bloating the context but also getting expensive to run.
+Have you ever wondered what a single response from a tool on an MCP server would cost you based on the model you’re using? Tool responses are basically tokens, and these tokens end up as input tokens for the LLM, which costs money. Since MCP servers push the LLM inference cost back to the client, it’s important for the client to know if an MCP server is not only bloating the context but also getting expensive to run.
 
 Some MCP server tools return way too much information just to answer your query. This repo helps you check that cost. Whether you’re a developer building an MCP server or a client trying to understand the cost of different requests, this tool helps you estimate how much each request might cost based on the model and cost multiplier you provide.
 
