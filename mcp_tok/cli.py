@@ -1,6 +1,8 @@
 import json
-import typer
 from typing import Optional
+
+import typer
+
 from .client import MCPClient
 from .tokenizer import Tokenizer
 
@@ -41,12 +43,22 @@ def estimate(
         with open(tools_config, "r") as f:
             tool_inputs = json.load(f)
 
+    # Get tools list and count initialization tokens
+    tools_meta = client.get_tools()
+    init_tokens = tokenizer.count(json.dumps(tools_meta))
+
+    init_cost_msg = f"[INITIALIZATION] tokens = {init_tokens}"
+    if cost_per_million is not None:
+        init_cost = (init_tokens / 1_000_000) * cost_per_million
+        init_cost_msg += f" | cost = ${init_cost:.6f}"
+    typer.secho(init_cost_msg, fg=typer.colors.CYAN)
+    typer.echo("---")
+
     # Load tools from config or all available tools
     if tools_config:
         # Use tools specified in config file
         tools = list(tool_inputs.keys())
     else:
-        tools_meta = client.get_tools()
         # The response should have a "tools" key containing the list
         if isinstance(tools_meta, dict) and "tools" in tools_meta:
             tools = [
@@ -60,7 +72,12 @@ def estimate(
             )
             return
 
-    results = []
+    results = [
+        {
+            "tool": "__INITIALIZATION__",
+            "tokens": init_tokens,
+        }
+    ]
     for tname in tools:
         if not tname or not isinstance(tname, str):
             typer.secho(f"SKIPPING invalid tool name: {tname}", fg=typer.colors.YELLOW)
@@ -97,6 +114,15 @@ def estimate(
             cost = (tok_count / 1_000_000) * cost_per_million
             cost_msg += f" | cost = ${cost:.6f}"
         typer.secho(cost_msg, fg=typer.colors.GREEN)
+
+    # Calculate and display totals
+    typer.echo("---")
+    total_tokens = sum(r["tokens"] for r in results)
+    total_msg = f"[TOTAL] tokens = {total_tokens}"
+    if cost_per_million is not None:
+        total_cost = (total_tokens / 1_000_000) * cost_per_million
+        total_msg += f" | cost = ${total_cost:.6f}"
+    typer.secho(total_msg, fg=typer.colors.MAGENTA, bold=True)
 
     # pretty-print JSON summary
     typer.echo(json.dumps({"server": server_url, "results": results}, indent=2))
