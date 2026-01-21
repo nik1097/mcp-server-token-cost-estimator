@@ -29,13 +29,51 @@ def estimate(
         "-c",
         help="Cost per million input tokens (e.g., 3.0 for $3.00/1M tokens)",
     ),
+    provider: str = typer.Option(
+        "openai",
+        "--provider",
+        "-p",
+        help="Token counting provider: 'openai' or 'claude'",
+    ),
+    claude_base_url: Optional[str] = typer.Option(
+        None,
+        "--claude-base-url",
+        help="Base URL for Claude API (required if provider=claude)",
+    ),
+    claude_api_key: Optional[str] = typer.Option(
+        None,
+        "--claude-api-key",
+        help="API key for Claude (required if provider=claude)",
+    ),
+    claude_model: str = typer.Option(
+        "claude-sonnet-4-5",
+        "--claude-model",
+        help="Claude model name for token counting",
+    ),
 ):
     """
     Estimate token cost for one or all MCP tools by calling them directly.
     No LLMs involved — raw HTTP only.
     """
+    # Validate Claude configuration if provider is claude
+    if provider.lower() == "claude":
+        if not claude_base_url or not claude_api_key:
+            typer.secho(
+                "ERROR: --claude-base-url and --claude-api-key are required when using --provider=claude",
+                fg=typer.colors.RED,
+            )
+            raise typer.Exit(1)
+
+        anthropic_config = {
+            "base_url": claude_base_url,
+            "api_key": claude_api_key,
+            "model": claude_model,
+        }
+        tokenizer = Tokenizer(provider="claude", anthropic_config=anthropic_config)
+    else:
+        tokenizer = Tokenizer(provider="openai")
+
     client = MCPClient(server_url, token=token)
-    tokenizer = Tokenizer()
 
     # Parse tools config if provided
     tool_inputs = {}
