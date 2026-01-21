@@ -21,6 +21,10 @@ uv run mcp-tok <server-url> --tools-config <config-file> [OPTIONS]
 - `--tools-config, -t`: Path to JSON file specifying tools and their input parameters
 - `--token`: Bearer token for authentication
 - `--cost, -c`: Cost per million input tokens (e.g., 2.50 for $2.50/1M tokens)
+- `--provider, -p`: Token counting provider: `openai` (default) or `claude`
+- `--claude-base-url`: Base URL for Claude API (required if provider=claude)
+- `--claude-api-key`: API key for Claude (required if provider=claude)
+- `--claude-model`: Claude model name for token counting (default: claude-sonnet-4-5)
 
 ### Tools Config File
 
@@ -55,14 +59,25 @@ Create a JSON file mapping tool names to their input parameters. Each tool can h
 
 ### Examples
 
-**Basic usage:**
+**Basic usage with OpenAI (default):**
 ```bash
 uv run mcp-tok https://mcp.morningstar.com/mcp \
   --tools-config tools.json \
   --token YOUR_TOKEN
 ```
 
-**With cost estimation:**
+**With Claude token counting:**
+```bash
+uv run mcp-tok https://mcp.morningstar.com/mcp \
+  --tools-config tools.json \
+  --token YOUR_TOKEN \
+  --provider claude \
+  --claude-base-url https://your-azure-endpoint.com/anthropic \
+  --claude-api-key YOUR_CLAUDE_KEY \
+  --cost 3.0
+```
+
+**With cost estimation (OpenAI):**
 ```bash
 uv run mcp-tok https://mcp.morningstar.com/mcp \
   --tools-config tools.json \
@@ -93,3 +108,20 @@ Final JSON summary:
   ]
 }
 ```
+
+## Provider Comparison
+
+### OpenAI (default)
+- Uses `tiktoken` with `o200k_base` encoding
+- Fast, offline token counting
+- Approximates OpenAI models (GPT-4, GPT-4o, etc.)
+- Does not require API calls
+
+### Claude
+- Uses Anthropic's official `count_tokens` API
+- Accurate token counting for Claude models
+- Requires API credentials and makes API calls
+- Supports tool definitions in token count
+- Recommended when using Claude models (Sonnet, Opus, Haiku)
+
+**Note:** Token counts may differ between providers due to different tokenization methods. Use the provider that matches your LLM choice for accurate cost estimates.
